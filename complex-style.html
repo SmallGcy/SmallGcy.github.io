@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FontVerse Gallery</title>
+  <title>FontVerse Complex Style Gallery</title>
   <meta
     name="description"
-    content="Public gallery for FontVerse target images, browsable by style class or shape class."
+    content="Focused FontVerse gallery for complex material styles, with background and transparent PNG switching."
   >
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,40 +17,45 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <a class="skip-link" href="#galleryPanel">Skip to gallery</a>
+  <a class="skip-link" href="#complexGalleryPanel">Skip to gallery</a>
 
   <div class="page-shell">
     <nav class="site-nav" aria-label="Site sections">
-      <a class="site-nav-link active" href="./index.html" aria-current="page">Main Gallery</a>
-      <a class="site-nav-link" href="./complex-style.html">Complex Style</a>
+      <a class="site-nav-link" href="./index.html">Main Gallery</a>
+      <a class="site-nav-link active" href="./complex-style.html" aria-current="page">Complex Style</a>
       <a class="site-nav-link" href="./test-data.html">Test Data</a>
     </nav>
 
     <header class="hero">
       <div class="hero-topline">
         <p class="eyebrow">SmallGcy.github.io</p>
-        <p class="hero-kicker">Public archive for generated font imagery</p>
+        <p class="hero-kicker">Focused material-style subset</p>
       </div>
       <div class="hero-grid">
         <div class="hero-main">
-          <h1>FontVerse as a calm, readable archive.</h1>
+          <h1>Complex styles, isolated into one readable page.</h1>
           <p class="hero-text">
-            Browse the collection by <strong>style class</strong> or <strong>shape class</strong>,
-            then switch between the original render and the transparent PNG cutout without leaving the page.
+            This page keeps only nine high-complexity material styles: <strong>Acrylic Plastic</strong>,
+            <strong>Crystal Glass</strong>, <strong>Frosted Glass</strong>, <strong>glass</strong>,
+            <strong>Glow Tube</strong>, <strong>flame</strong>, <strong>smoke</strong>,
+            <strong>Soap Bubble</strong>, and <strong>water</strong>.
+          </p>
+          <p class="hero-note">
+            Switch between the original background render and the transparent PNG cutout while browsing the filtered style set.
           </p>
         </div>
-        <div class="hero-stats" aria-label="Dataset summary">
+        <div class="hero-stats" aria-label="Subset summary">
           <article class="stat-card">
             <span class="stat-label">Generated Images</span>
-            <strong id="statItems">--</strong>
+            <strong id="complexStatItems">--</strong>
           </article>
           <article class="stat-card">
-            <span class="stat-label">Style Classes</span>
-            <strong id="statStyles">--</strong>
+            <span class="stat-label">Selected Styles</span>
+            <strong id="complexStatStyles">--</strong>
           </article>
           <article class="stat-card">
             <span class="stat-label">Shape Classes</span>
-            <strong id="statShapes">--</strong>
+            <strong id="complexStatShapes">--</strong>
           </article>
         </div>
       </div>
@@ -61,16 +66,12 @@
         <section class="panel rail-panel">
           <div class="panel-header control-header">
             <div>
-              <p class="panel-label">Browse Mode</p>
-              <h2 class="panel-title">Choose an index</h2>
-            </div>
-            <div class="mode-toggle" id="modeToggle">
-              <button type="button" class="mode-button" data-mode="style">Style</button>
-              <button type="button" class="mode-button" data-mode="shape">Shape</button>
+              <p class="panel-label">Collection Focus</p>
+              <h2 class="panel-title">Nine material styles</h2>
             </div>
           </div>
-          <p class="panel-hint" id="modeHint">
-            Select a style class to see its style reference image and matching generated targets.
+          <p class="panel-hint" id="complexModeHint">
+            Choose a style class to keep its reference image fixed while the gallery pages through matching outputs.
           </p>
 
           <div class="toggle-block">
@@ -79,12 +80,12 @@
                 <p class="panel-label">Image Variant</p>
                 <h2 class="panel-title">Render mode</h2>
               </div>
-              <div class="variant-toggle" id="variantToggle">
+              <div class="variant-toggle" id="complexVariantToggle">
                 <button type="button" class="variant-button" data-variant="background">Background</button>
                 <button type="button" class="variant-button" data-variant="alpha">Transparent</button>
               </div>
             </div>
-            <p class="panel-hint variant-hint" id="variantHint">
+            <p class="panel-hint variant-hint" id="complexVariantHint">
               Switch between the original background render and the transparent PNG version.
             </p>
           </div>
@@ -93,38 +94,38 @@
         <section class="panel rail-panel category-panel">
           <div class="panel-header compact">
             <div>
-              <p class="panel-label" id="categoryLabel">Style Classes</p>
-              <h2 class="panel-title panel-title-large" id="categoryCount">-- categories</h2>
+              <p class="panel-label" id="complexCategoryLabel">Complex Styles</p>
+              <h2 class="panel-title panel-title-large" id="complexCategoryCount">-- categories</h2>
             </div>
           </div>
-          <div class="category-list" id="categoryList"></div>
+          <div class="category-list" id="complexCategoryList"></div>
         </section>
       </aside>
 
-      <section class="content" id="galleryPanel">
+      <section class="content" id="complexGalleryPanel">
         <section class="panel reference-panel">
           <div class="reference-layout">
             <div class="reference-visual">
-              <img id="referenceImage" alt="" loading="lazy">
+              <img id="complexReferenceImage" alt="" loading="lazy">
             </div>
             <div class="reference-copy">
               <p class="panel-label">Reference</p>
-              <h2 class="panel-title panel-title-hero" id="referenceTitle">Loading...</h2>
+              <h2 class="panel-title panel-title-hero" id="complexReferenceTitle">Loading...</h2>
               <p class="reference-description">
-                The active class stays visible here while the gallery below pages through the generated outputs.
+                The selected style remains pinned here while the gallery below pages through the filtered subset.
               </p>
               <dl class="reference-meta">
                 <div>
                   <dt>Mode</dt>
-                  <dd id="referenceMode">--</dd>
+                  <dd id="complexReferenceMode">Style</dd>
                 </div>
                 <div>
                   <dt>Items</dt>
-                  <dd id="referenceItemCount">--</dd>
+                  <dd id="complexReferenceItemCount">--</dd>
                 </div>
                 <div>
                   <dt>Source</dt>
-                  <dd><a id="referenceLink" href="#" target="_blank" rel="noreferrer">Open image</a></dd>
+                  <dd><a id="complexReferenceLink" href="#" target="_blank" rel="noreferrer">Open image</a></dd>
                 </div>
               </dl>
             </div>
@@ -135,25 +136,25 @@
           <div class="panel-header gallery-header">
             <div>
               <p class="panel-label">Gallery</p>
-              <h2 class="panel-title panel-title-large" id="galleryTitle">Loading...</h2>
+              <h2 class="panel-title panel-title-large" id="complexGalleryTitle">Loading...</h2>
             </div>
             <div class="pagination-inline">
-              <button type="button" class="nav-button" id="prevPage">Previous</button>
-              <span id="pageInfo">Page --</span>
-              <button type="button" class="nav-button" id="nextPage">Next</button>
+              <button type="button" class="nav-button" id="complexPrevPage">Previous</button>
+              <span id="complexPageInfo">Page --</span>
+              <button type="button" class="nav-button" id="complexNextPage">Next</button>
             </div>
           </div>
-          <p class="gallery-subtitle" id="gallerySubtitle">Fetching manifest...</p>
-          <div class="gallery-grid" id="galleryGrid"></div>
-          <div class="empty-state hidden" id="emptyState">
-            No images were found for this category.
+          <p class="gallery-subtitle" id="complexGallerySubtitle">Fetching manifest...</p>
+          <div class="gallery-grid" id="complexGalleryGrid"></div>
+          <div class="empty-state hidden" id="complexEmptyState">
+            No images were found for this style.
           </div>
         </section>
       </section>
     </main>
   </div>
 
-  <template id="imageCardTemplate">
+  <template id="complexImageCardTemplate">
     <article class="image-card">
       <a class="image-link" target="_blank" rel="noreferrer">
         <img class="gallery-image" alt="" loading="lazy">
@@ -165,6 +166,6 @@
     </article>
   </template>
 
-  <script src="./app.js" defer></script>
+  <script src="./complex-style.js" defer></script>
 </body>
 </html>
