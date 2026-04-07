@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FontVerse Test Gallery</title>
+  <meta
+    name="description"
+    content="Dedicated gallery for FontVerse test data, browsable by style class, shape class, or font class."
+  >
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Libre+Bodoni:wght@400;500;600;700&family=Public+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#testGalleryPanel">Skip to gallery</a>
+
+  <div class="page-shell">
+    <nav class="site-nav" aria-label="Site sections">
+      <a class="site-nav-link" href="./index.html">Main Gallery</a>
+      <a class="site-nav-link active" href="./test-data.html" aria-current="page">Test Data</a>
+    </nav>
+
+    <header class="hero">
+      <div class="hero-topline">
+        <p class="eyebrow">SmallGcy.github.io</p>
+        <p class="hero-kicker">Dedicated browser for test-time generations</p>
+      </div>
+      <div class="hero-grid">
+        <div class="hero-main">
+          <h1>Test data, split across three browsing axes.</h1>
+          <p class="hero-text">
+            Explore the `test_data` outputs by <strong>style class</strong>, <strong>shape class</strong>,
+            or <strong>font class</strong>. The page keeps the active reference visible while the gallery
+            pages through matching results four at a time.
+          </p>
+          <p class="hero-note">
+            `Style` shows the style-pairing subset, `Font` shows the raw-font subset, and `Shape` merges both task families.
+          </p>
+        </div>
+        <div class="hero-stats hero-stats-quad" aria-label="Dataset summary">
+          <article class="stat-card">
+            <span class="stat-label">Generated Images</span>
+            <strong id="testStatItems">--</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-label">Style Classes</span>
+            <strong id="testStatStyles">--</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-label">Shape Classes</span>
+            <strong id="testStatShapes">--</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-label">Font Classes</span>
+            <strong id="testStatFonts">--</strong>
+          </article>
+        </div>
+      </div>
+    </header>
+
+    <main class="app-layout">
+      <aside class="sidebar">
+        <section class="panel rail-panel">
+          <div class="panel-header control-header">
+            <div>
+              <p class="panel-label">Browse Mode</p>
+              <h2 class="panel-title">Choose an index</h2>
+            </div>
+            <div class="mode-toggle" id="testModeToggle">
+              <button type="button" class="mode-button" data-mode="style">Style</button>
+              <button type="button" class="mode-button" data-mode="shape">Shape</button>
+              <button type="button" class="mode-button" data-mode="font">Font</button>
+            </div>
+          </div>
+          <p class="panel-hint" id="testModeHint">
+            Select a style class to inspect the style-pairing subset and its matching outputs.
+          </p>
+        </section>
+
+        <section class="panel rail-panel category-panel">
+          <div class="panel-header compact">
+            <div>
+              <p class="panel-label" id="testCategoryLabel">Style Classes</p>
+              <h2 class="panel-title panel-title-large" id="testCategoryCount">-- categories</h2>
+            </div>
+          </div>
+          <div class="category-list" id="testCategoryList"></div>
+        </section>
+      </aside>
+
+      <section class="content" id="testGalleryPanel">
+        <section class="panel reference-panel">
+          <div class="reference-layout">
+            <div class="reference-visual" id="testReferenceVisual">
+              <img id="testReferenceImage" alt="" loading="lazy">
+              <div class="reference-placeholder hidden" id="testReferencePlaceholder">
+                <p class="placeholder-title">Reference image unavailable</p>
+                <p class="placeholder-copy">
+                  This category exists in the manifest, but its reference image has not been uploaded to the public data repo yet.
+                </p>
+              </div>
+            </div>
+            <div class="reference-copy">
+              <p class="panel-label">Reference</p>
+              <h2 class="panel-title panel-title-hero" id="testReferenceTitle">Loading...</h2>
+              <p class="reference-description" id="testReferenceDescription">
+                Loading the dedicated test-data manifest.
+              </p>
+              <dl class="reference-meta">
+                <div>
+                  <dt>Mode</dt>
+                  <dd id="testReferenceMode">--</dd>
+                </div>
+                <div>
+                  <dt>Items</dt>
+                  <dd id="testReferenceItemCount">--</dd>
+                </div>
+                <div>
+                  <dt>Reference</dt>
+                  <dd id="testReferenceStatus">--</dd>
+                </div>
+                <div>
+                  <dt>Source</dt>
+                  <dd><a id="testReferenceLink" href="#" target="_blank" rel="noreferrer">Open image</a></dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel gallery-panel">
+          <div class="panel-header gallery-header">
+            <div>
+              <p class="panel-label">Gallery</p>
+              <h2 class="panel-title panel-title-large" id="testGalleryTitle">Loading...</h2>
+            </div>
+            <div class="pagination-inline">
+              <button type="button" class="nav-button" id="testPrevPage">Previous</button>
+              <span id="testPageInfo">Page --</span>
+              <button type="button" class="nav-button" id="testNextPage">Next</button>
+            </div>
+          </div>
+          <p class="gallery-subtitle" id="testGallerySubtitle">Fetching manifest...</p>
+          <div class="gallery-grid" id="testGalleryGrid"></div>
+          <div class="empty-state hidden" id="testEmptyState">
+            No images were found for this category.
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <template id="testImageCardTemplate">
+    <article class="image-card">
+      <a class="image-link" target="_blank" rel="noreferrer">
+        <img class="gallery-image" alt="" loading="lazy">
+      </a>
+      <div class="image-body">
+        <h3 class="image-title"></h3>
+        <p class="image-meta"></p>
+        <div class="tag-row"></div>
+      </div>
+    </article>
+  </template>
+
+  <script src="./test-data.js" defer></script>
+</body>
+</html>
