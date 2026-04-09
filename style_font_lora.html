@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FontVerse Style Font LoRA Gallery</title>
+  <meta
+    name="description"
+    content="Dedicated gallery for folder-based font LoRA batches, with example-image references and RGB/RGBA switching."
+  >
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Libre+Bodoni:wght@400;500;600;700&family=Public+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#styleFontLoraGalleryPanel">Skip to gallery</a>
+
+  <div class="page-shell">
+    <nav class="site-nav" aria-label="Site sections">
+      <a class="site-nav-link" href="./index.html">Main Gallery</a>
+      <a class="site-nav-link" href="./complex-style.html">Complex Style</a>
+      <a class="site-nav-link" href="./test-data.html">Test Data</a>
+      <a class="site-nav-link active" href="./style_font_lora.html" aria-current="page">Style Font LoRA</a>
+    </nav>
+
+    <header class="hero">
+      <div class="hero-topline">
+        <p class="eyebrow">SmallGcy.github.io</p>
+        <p class="hero-kicker">Folder-based browser for font LoRA batches</p>
+      </div>
+      <div class="hero-grid">
+        <div class="hero-main">
+          <h1>Font LoRA results, organized exactly by batch folder.</h1>
+          <p class="hero-text">
+            Each folder under `font_lora_t2i_batch` becomes one browsing category. The selected
+            category keeps its matching `example_images` reference pinned on the left while the gallery
+            pages through four generated results at a time.
+          </p>
+          <p class="hero-note">
+            Switch between the original RGB render and the RGBA cutout stored in each category's `pred/` subfolder.
+          </p>
+        </div>
+        <div class="hero-stats" aria-label="Dataset summary">
+          <article class="stat-card">
+            <span class="stat-label">Generated Images</span>
+            <strong id="styleFontLoraStatItems">--</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-label">LoRA Categories</span>
+            <strong id="styleFontLoraStatCategories">--</strong>
+          </article>
+          <article class="stat-card">
+            <span class="stat-label">RGBA-ready Items</span>
+            <strong id="styleFontLoraStatAlpha">--</strong>
+          </article>
+        </div>
+      </div>
+    </header>
+
+    <main class="app-layout">
+      <aside class="sidebar">
+        <section class="panel rail-panel">
+          <div class="panel-header control-header">
+            <div>
+              <p class="panel-label">Collection Focus</p>
+              <h2 class="panel-title">Folder categories</h2>
+            </div>
+          </div>
+          <p class="panel-hint" id="styleFontLoraModeHint">
+            Choose a folder name to pin its `example_images` preview and browse only the matching LoRA outputs.
+          </p>
+
+          <div class="toggle-block">
+            <div class="panel-header control-header compact">
+              <div>
+                <p class="panel-label">Image Variant</p>
+                <h2 class="panel-title">Render mode</h2>
+              </div>
+              <div class="variant-toggle" id="styleFontLoraVariantToggle">
+                <button type="button" class="variant-button" data-variant="background">RGB</button>
+                <button type="button" class="variant-button" data-variant="alpha">RGBA</button>
+              </div>
+            </div>
+            <p class="panel-hint variant-hint" id="styleFontLoraVariantHint">
+              Switch between the original render and the transparent PNG cutout.
+            </p>
+          </div>
+        </section>
+
+        <section class="panel rail-panel category-panel">
+          <div class="panel-header compact">
+            <div>
+              <p class="panel-label">LoRA Categories</p>
+              <h2 class="panel-title panel-title-large" id="styleFontLoraCategoryCount">-- categories</h2>
+            </div>
+          </div>
+          <div class="category-list" id="styleFontLoraCategoryList"></div>
+        </section>
+      </aside>
+
+      <section class="content" id="styleFontLoraGalleryPanel">
+        <section class="panel reference-panel">
+          <div class="reference-layout">
+            <div class="reference-visual" id="styleFontLoraReferenceVisual">
+              <img id="styleFontLoraReferenceImage" alt="" loading="lazy">
+              <div class="reference-placeholder hidden" id="styleFontLoraReferencePlaceholder">
+                <p class="placeholder-title">Example image unavailable</p>
+                <p class="placeholder-copy">
+                  This category exists in the manifest, but its matching `example_images` asset has not been uploaded yet.
+                </p>
+              </div>
+            </div>
+            <div class="reference-copy">
+              <p class="panel-label">Reference</p>
+              <h2 class="panel-title panel-title-hero" id="styleFontLoraReferenceTitle">Loading...</h2>
+              <p class="reference-description">
+                The left panel always shows the category-level example image while the gallery below pages through that folder's generated results.
+              </p>
+              <dl class="reference-meta">
+                <div>
+                  <dt>Category</dt>
+                  <dd id="styleFontLoraReferenceCategory">--</dd>
+                </div>
+                <div>
+                  <dt>Items</dt>
+                  <dd id="styleFontLoraReferenceItemCount">--</dd>
+                </div>
+                <div>
+                  <dt>Example</dt>
+                  <dd id="styleFontLoraReferenceStatus">--</dd>
+                </div>
+                <div>
+                  <dt>Source</dt>
+                  <dd><a id="styleFontLoraReferenceLink" href="#" target="_blank" rel="noreferrer">Open image</a></dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel gallery-panel">
+          <div class="panel-header gallery-header">
+            <div>
+              <p class="panel-label">Gallery</p>
+              <h2 class="panel-title panel-title-large" id="styleFontLoraGalleryTitle">Loading...</h2>
+            </div>
+            <div class="pagination-inline">
+              <button type="button" class="nav-button" id="styleFontLoraPrevPage">Previous</button>
+              <span id="styleFontLoraPageInfo">Page --</span>
+              <button type="button" class="nav-button" id="styleFontLoraNextPage">Next</button>
+            </div>
+          </div>
+          <p class="gallery-subtitle" id="styleFontLoraGallerySubtitle">Fetching manifest...</p>
+          <div class="gallery-grid" id="styleFontLoraGalleryGrid"></div>
+          <div class="empty-state hidden" id="styleFontLoraEmptyState">
+            No images were found for this LoRA category.
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <template id="styleFontLoraImageCardTemplate">
+    <article class="image-card">
+      <a class="image-link" target="_blank" rel="noreferrer">
+        <img class="gallery-image" alt="" loading="lazy">
+      </a>
+      <div class="image-body">
+        <h3 class="image-title"></h3>
+        <p class="image-meta"></p>
+        <div class="tag-row"></div>
+      </div>
+    </article>
+  </template>
+
+  <script src="./style_font_lora.js" defer></script>
+</body>
+</html>
