@@ -6,7 +6,7 @@
   <title>FontVerse Complex Style Gallery</title>
   <meta
     name="description"
-    content="Focused FontVerse gallery for complex material styles, with background and transparent PNG switching."
+    content="Focused FontVerse gallery for complex-style prompt outputs, with background and transparent PNG switching."
   >
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,19 +29,18 @@
     <header class="hero">
       <div class="hero-topline">
         <p class="eyebrow">SmallGcy.github.io</p>
-        <p class="hero-kicker">Focused material-style subset</p>
+        <p class="hero-kicker">Dedicated complex-style prompt set</p>
       </div>
       <div class="hero-grid">
         <div class="hero-main">
-          <h1>Complex styles, isolated into one readable page.</h1>
+          <h1>Complex styles, rebuilt as a dedicated prompt-driven set.</h1>
           <p class="hero-text">
-            This page keeps only nine high-complexity material styles: <strong>Acrylic Plastic</strong>,
-            <strong>Crystal Glass</strong>, <strong>Frosted Glass</strong>, <strong>glass</strong>,
-            <strong>Glow Tube</strong>, <strong>flame</strong>, <strong>smoke</strong>,
-            <strong>Soap Bubble</strong>, and <strong>water</strong>.
+            This page shows the dedicated outputs generated from your `complex_style_prompt.json`
+            prompt set. Each category keeps its own style reference when available, while the gallery
+            pages through the matching generated results.
           </p>
           <p class="hero-note">
-            Switch between the original background render and the transparent PNG cutout while browsing the filtered style set.
+            Switch between the original background render and the transparent PNG cutout while browsing the uploaded complex-style dataset.
           </p>
         </div>
         <div class="hero-stats" aria-label="Subset summary">
@@ -67,11 +66,11 @@
           <div class="panel-header control-header">
             <div>
               <p class="panel-label">Collection Focus</p>
-              <h2 class="panel-title">Nine material styles</h2>
+              <h2 class="panel-title">Prompt-defined styles</h2>
             </div>
           </div>
           <p class="panel-hint" id="complexModeHint">
-            Choose a style class to keep its reference image fixed while the gallery pages through matching outputs.
+            Choose a style class to keep its reference image fixed when available while the gallery pages through matching outputs.
           </p>
 
           <div class="toggle-block">
@@ -105,8 +104,14 @@
       <section class="content" id="complexGalleryPanel">
         <section class="panel reference-panel">
           <div class="reference-layout">
-            <div class="reference-visual">
+            <div class="reference-visual" id="complexReferenceVisual">
               <img id="complexReferenceImage" alt="" loading="lazy">
+              <div class="reference-placeholder hidden" id="complexReferencePlaceholder">
+                <p class="placeholder-title">Reference image unavailable</p>
+                <p class="placeholder-copy">
+                  This style exists in the manifest, but its reference image has not been uploaded to the public data repo yet.
+                </p>
+              </div>
             </div>
             <div class="reference-copy">
               <p class="panel-label">Reference</p>

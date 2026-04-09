@@ -1,16 +1,5 @@
-const MANIFEST_URL = "./data/manifest.json";
+const MANIFEST_URL = "./data/complex-style-manifest.json";
 const ITEMS_PER_PAGE = 4;
-const ALLOWED_STYLES = [
-  "Acrylic Plastic",
-  "Crystal Glass",
-  "Frosted Glass",
-  "glass",
-  "Glow Tube",
-  "flame",
-  "smoke",
-  "Soap Bubble",
-  "water",
-];
 
 const state = {
   manifest: null,
@@ -26,8 +15,10 @@ const elements = {
   variantHint: document.querySelector("#complexVariantHint"),
   categoryCount: document.querySelector("#complexCategoryCount"),
   categoryList: document.querySelector("#complexCategoryList"),
+  referenceVisual: document.querySelector("#complexReferenceVisual"),
   referenceTitle: document.querySelector("#complexReferenceTitle"),
   referenceImage: document.querySelector("#complexReferenceImage"),
+  referencePlaceholder: document.querySelector("#complexReferencePlaceholder"),
   referenceItemCount: document.querySelector("#complexReferenceItemCount"),
   referenceLink: document.querySelector("#complexReferenceLink"),
   galleryTitle: document.querySelector("#complexGalleryTitle"),
@@ -49,14 +40,7 @@ function getFilteredStyles() {
   if (!state.manifest) {
     return [];
   }
-
-  const available = new Map(
-    state.manifest.styles
-      .filter((item) => item.item_count > 0 && ALLOWED_STYLES.includes(item.name))
-      .map((item) => [item.name, item])
-  );
-
-  return ALLOWED_STYLES.map((name) => available.get(name)).filter(Boolean);
+  return state.manifest.styles.filter((item) => item.item_count > 0);
 }
 
 function getFilteredItems() {
@@ -65,7 +49,6 @@ function getFilteredItems() {
   }
 
   return state.manifest.items
-    .filter((item) => ALLOWED_STYLES.includes(item.style_class))
     .sort((left, right) => Number.parseInt(left.id, 10) - Number.parseInt(right.id, 10));
 }
 
@@ -150,6 +133,22 @@ function renderVariantButtons() {
     : "Transparent PNG files are not available in the current manifest.";
 }
 
+function setReferenceVisual(reference) {
+  const hasImage = Boolean(reference?.image_url);
+  elements.referenceVisual.classList.toggle("is-empty", !hasImage);
+  elements.referenceImage.classList.toggle("hidden", !hasImage);
+  elements.referencePlaceholder.classList.toggle("hidden", hasImage);
+
+  if (!hasImage) {
+    elements.referenceImage.removeAttribute("src");
+    elements.referenceImage.alt = "";
+    return;
+  }
+
+  elements.referenceImage.src = reference.image_url;
+  elements.referenceImage.alt = `${reference.name} style reference`;
+}
+
 function renderCategoryList() {
   const categories = getFilteredStyles();
   elements.categoryCount.textContent = `${formatNumber(categories.length)} categories`;
@@ -187,18 +186,23 @@ function renderReferencePanel(itemCount) {
   const reference = getReferenceByName(state.categoryName);
   if (!reference) {
     elements.referenceTitle.textContent = "Unknown style";
-    elements.referenceImage.removeAttribute("src");
-    elements.referenceImage.alt = "";
     elements.referenceItemCount.textContent = "0";
     elements.referenceLink.href = "#";
+    elements.referenceLink.setAttribute("aria-disabled", "true");
+    setReferenceVisual(null);
     return;
   }
 
   elements.referenceTitle.textContent = reference.name;
-  elements.referenceImage.src = reference.image_url;
-  elements.referenceImage.alt = `${reference.name} style reference`;
   elements.referenceItemCount.textContent = formatNumber(itemCount);
-  elements.referenceLink.href = reference.image_url;
+  if (reference.image_url) {
+    elements.referenceLink.href = reference.image_url;
+    elements.referenceLink.removeAttribute("aria-disabled");
+  } else {
+    elements.referenceLink.href = "#";
+    elements.referenceLink.setAttribute("aria-disabled", "true");
+  }
+  setReferenceVisual(reference);
 }
 
 function renderGallery() {
@@ -311,7 +315,7 @@ async function init() {
     render();
   } catch (error) {
     console.error(error);
-    renderError("The gallery manifest could not be loaded. Check data/manifest.json and try again.");
+    renderError("The gallery manifest could not be loaded. Check data/complex-style-manifest.json and try again.");
   }
 }
 
