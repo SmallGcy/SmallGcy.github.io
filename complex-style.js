@@ -1,4 +1,4 @@
-const MANIFEST_URL = "./data/complex-style-manifest.json?v=20260409-complex-style-smoke-refresh";
+const MANIFEST_URL = "./data/complex-style-manifest.json?v=20260409-complex-style-smoke-direct";
 const ITEMS_PER_PAGE = 4;
 
 const state = {

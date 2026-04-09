@@ -83,12 +83,54 @@ def parse_args() -> argparse.Namespace:
         default="",
         help="Optional cache-busting version appended to CDN asset URLs, e.g. 20260409-smoke-refresh.",
     )
+    parser.add_argument(
+        "--style-images-override",
+        action="append",
+        default=[],
+        metavar="STYLE=DIR",
+        help="Override the local color-image directory for one style class.",
+    )
+    parser.add_argument(
+        "--style-alpha-override",
+        action="append",
+        default=[],
+        metavar="STYLE=DIR",
+        help="Override the local alpha-image directory for one style class.",
+    )
+    parser.add_argument(
+        "--style-cdn-images-override",
+        action="append",
+        default=[],
+        metavar="STYLE=FOLDER",
+        help="Override the CDN color-image folder for one style class.",
+    )
+    parser.add_argument(
+        "--style-cdn-alpha-override",
+        action="append",
+        default=[],
+        metavar="STYLE=FOLDER",
+        help="Override the CDN alpha-image folder for one style class.",
+    )
     return parser.parse_args()
 
 
 def load_json(path: Path):
     with open(path, "r", encoding="utf-8") as file:
         return json.load(file)
+
+
+def parse_style_mapping(items: list[str], label: str) -> dict[str, str]:
+    mapping: dict[str, str] = {}
+    for raw in items:
+        if "=" not in raw:
+            raise ValueError(f"Invalid {label}: {raw}. Expected STYLE=VALUE.")
+        key, value = raw.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if not key or not value:
+            raise ValueError(f"Invalid {label}: {raw}. Expected STYLE=VALUE.")
+        mapping[key] = value
+    return mapping
 
 
 def build_cdn_url(base_url: str, folder: str, file_name: str, asset_version: str = "") -> str:
@@ -202,6 +244,25 @@ def natural_shape_key(name: str) -> tuple[int, str]:
     return 10**9, name.lower()
 
 
+def list_image_names(folder: Path) -> set[str]:
+    return {
+        path.name
+        for path in folder.iterdir()
+        if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES
+    }
+
+
+def list_image_paths(folder: Path) -> list[Path]:
+    return sorted(
+        (
+            path
+            for path in folder.iterdir()
+            if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES
+        ),
+        key=lambda path: path.name,
+    )
+
+
 def main() -> None:
     args = parse_args()
     data_root = args.data_root.resolve()
@@ -220,32 +281,55 @@ def main() -> None:
         f"https://cdn.jsdelivr.net/gh/{args.github_owner}/{args.github_repo}@{args.github_ref}"
     )
 
+    style_images_override = {
+        key: Path(value).resolve()
+        for key, value in parse_style_mapping(args.style_images_override, "style-images-override").items()
+    }
+    style_alpha_override = {
+        key: Path(value).resolve()
+        for key, value in parse_style_mapping(args.style_alpha_override, "style-alpha-override").items()
+    }
+    style_cdn_images_override = parse_style_mapping(
+        args.style_cdn_images_override, "style-cdn-images-override"
+    )
+    style_cdn_alpha_override = parse_style_mapping(
+        args.style_cdn_alpha_override, "style-cdn-alpha-override"
+    )
+    override_styles = set(style_images_override) | set(style_alpha_override)
+
     prompt_style_names = load_style_classes(prompt_json)
-    style_name_order = {name: index for index, name in enumerate(prompt_style_names)}
     style_names = sorted(prompt_style_names, key=len, reverse=True)
 
     style_refs = load_reference_images(style_dir, base_url, args.asset_version)
     shape_refs = load_reference_images(shape_dir, base_url, args.asset_version)
-    alpha_names = {
-        path.name
-        for path in alpha_dir.iterdir()
-        if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES
-    }
+    alpha_names = list_image_names(alpha_dir)
 
     shape_names = sorted(shape_refs.keys(), key=len, reverse=True)
+
+    unknown_override_styles = override_styles - set(prompt_style_names)
+    if unknown_override_styles:
+        unknown = ", ".join(sorted(unknown_override_styles))
+        raise ValueError(f"Unknown style override(s): {unknown}")
+
+    for style_name in sorted(override_styles):
+        if style_name not in style_images_override:
+            raise ValueError(f"Missing --style-images-override for style '{style_name}'")
+        if style_name not in style_alpha_override:
+            raise ValueError(f"Missing --style-alpha-override for style '{style_name}'")
+        if not style_images_override[style_name].is_dir():
+            raise FileNotFoundError(
+                f"Missing override image directory for style '{style_name}': {style_images_override[style_name]}"
+            )
+        if not style_alpha_override[style_name].is_dir():
+            raise FileNotFoundError(
+                f"Missing override alpha directory for style '{style_name}': {style_alpha_override[style_name]}"
+            )
 
     items: list[dict] = []
     style_counts: defaultdict[str, int] = defaultdict(int)
     shape_counts: defaultdict[str, int] = defaultdict(int)
 
-    image_paths = sorted(
-        (
-            path
-            for path in images_dir.iterdir()
-            if path.is_file() and path.suffix.lower() in IMAGE_SUFFIXES
-        ),
-        key=lambda path: path.name,
-    )
+    image_paths = list_image_paths(images_dir)
 
     for image_path in image_paths:
         item = parse_target_image(
@@ -258,9 +342,36 @@ def main() -> None:
             alpha_names=alpha_names,
             asset_version=args.asset_version,
         )
+        if item["style_class"] in override_styles:
+            continue
         style_counts[item["style_class"]] += 1
         shape_counts[item["shape_class"]] += 1
         items.append(item)
+
+    for style_name in sorted(override_styles, key=lambda name: prompt_style_names.index(name)):
+        override_image_dir = style_images_override[style_name]
+        override_alpha_dir = style_alpha_override[style_name]
+        override_alpha_names = list_image_names(override_alpha_dir)
+        override_image_paths = list_image_paths(override_image_dir)
+        override_images_folder = style_cdn_images_override.get(style_name, args.cdn_images_folder)
+        override_alpha_folder = style_cdn_alpha_override.get(style_name, args.cdn_alpha_folder)
+
+        for image_path in override_image_paths:
+            item = parse_target_image(
+                image_path=image_path,
+                style_names=style_names,
+                shape_names=shape_names,
+                base_url=base_url,
+                images_folder=override_images_folder,
+                alpha_folder=override_alpha_folder,
+                alpha_names=override_alpha_names,
+                asset_version=args.asset_version,
+            )
+            if item["style_class"] != style_name:
+                continue
+            style_counts[item["style_class"]] += 1
+            shape_counts[item["shape_class"]] += 1
+            items.append(item)
 
     items.sort(key=lambda item: int(item["id"]))
 
@@ -297,6 +408,14 @@ def main() -> None:
             "images_folder": args.cdn_images_folder,
             "alpha_folder": args.cdn_alpha_folder,
             "asset_version": args.asset_version or None,
+            "style_overrides": {
+                style_name: {
+                    "images_folder": style_cdn_images_override.get(style_name, args.cdn_images_folder),
+                    "alpha_folder": style_cdn_alpha_override.get(style_name, args.cdn_alpha_folder),
+                }
+                for style_name in sorted(override_styles)
+            }
+            or None,
         },
         "counts": {
             "items": len(items),
