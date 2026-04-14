@@ -25,7 +25,17 @@ def parse_args() -> argparse.Namespace:
         "--input-manifest",
         type=Path,
         default=None,
-        help="Optional path to the raw test-data manifest. Defaults to <data-root>/test_data/results/manifest.json.",
+        help="Optional path to the raw test-data manifest or record list JSON. Defaults to <data-root>/test_data/results/manifest.json.",
+    )
+    parser.add_argument(
+        "--results-dir-relative",
+        default=None,
+        help="Optional result-image directory relative to the repo root. When set, result files are resolved as <dir>/{id:05d}.png.",
+    )
+    parser.add_argument(
+        "--result-extension",
+        default=".png",
+        help="File extension used with --results-dir-relative. Default: .png",
     )
     parser.add_argument(
         "--output",
@@ -48,11 +58,19 @@ def parse_args() -> argparse.Namespace:
         default="main",
         help="Git reference used to build CDN URLs.",
     )
+    parser.add_argument(
+        "--asset-version",
+        default="",
+        help="Optional cache-busting version appended to CDN URLs.",
+    )
     return parser.parse_args()
 
 
-def build_cdn_url(base_url: str, relative_path: str) -> str:
-    return f"{base_url}/{quote(relative_path, safe='/')}"
+def build_cdn_url(base_url: str, relative_path: str, asset_version: str = "") -> str:
+    url = f"{base_url}/{quote(relative_path, safe='/')}"
+    if asset_version:
+        return f"{url}?v={quote(asset_version, safe='')}"
+    return url
 
 
 def normalize_relative_path(raw_path: str | None) -> str | None:
@@ -109,6 +127,7 @@ def build_category_payload(
     names_to_counts: dict[str, int],
     names_to_path: dict[str, str | None],
     base_url: str,
+    asset_version: str,
 ) -> list[dict]:
     payload: list[dict] = []
     for name, count in names_to_counts.items():
@@ -116,7 +135,11 @@ def build_category_payload(
         payload.append(
             {
                 "name": name,
-                "image_url": build_cdn_url(base_url, relative_path) if relative_path else None,
+                "image_url": (
+                    build_cdn_url(base_url, relative_path, asset_version)
+                    if relative_path
+                    else None
+                ),
                 "relative_path": relative_path,
                 "item_count": count,
             }
@@ -141,8 +164,15 @@ def main() -> None:
         f"https://cdn.jsdelivr.net/gh/{args.github_owner}/{args.github_repo}@{args.github_ref}"
     )
 
-    raw_manifest = json.loads(input_manifest_path.read_text(encoding="utf-8"))
-    records = raw_manifest.get("records", [])
+    raw_payload = json.loads(input_manifest_path.read_text(encoding="utf-8"))
+    if isinstance(raw_payload, dict):
+        records = raw_payload.get("records", [])
+    elif isinstance(raw_payload, list):
+        records = raw_payload
+    else:
+        raise TypeError(
+            f"Unsupported input JSON type: {type(raw_payload).__name__}. Expected object or list."
+        )
 
     items: list[dict] = []
     style_counts: defaultdict[str, int] = defaultdict(int)
@@ -153,13 +183,27 @@ def main() -> None:
     font_paths: dict[str, str | None] = {}
 
     for index, record in enumerate(records, start=1):
-        image_id, numeric_id = numeric_stem(record.get("result_image_path"), index)
+        record_id = record.get("id", index)
+        if isinstance(record_id, str) and record_id.isdigit():
+            record_id = int(record_id)
+        if not isinstance(record_id, int):
+            record_id = index
 
-        result_path = resolve_repo_relative_path(data_root, record.get("result_image_path"))
-        if not result_path:
-            raise FileNotFoundError(
-                f"Result image is missing from the public data repository: {record.get('result_image_path')}"
-            )
+        if args.results_dir_relative:
+            image_id = str(record_id).zfill(5)
+            numeric_id = int(record_id)
+            result_path = Path(args.results_dir_relative, f"{image_id}{args.result_extension}").as_posix()
+            if not (data_root / result_path).is_file():
+                raise FileNotFoundError(
+                    f"Result image is missing from the public data repository: {result_path}"
+                )
+        else:
+            image_id, numeric_id = numeric_stem(record.get("result_image_path"), index)
+            result_path = resolve_repo_relative_path(data_root, record.get("result_image_path"))
+            if not result_path:
+                raise FileNotFoundError(
+                    f"Result image is missing from the public data repository: {record.get('result_image_path')}"
+                )
 
         mask_path = resolve_repo_relative_path(data_root, record.get("mask_image_path"))
         shape_path = resolve_repo_relative_path(data_root, record.get("shape_image_path"))
@@ -193,18 +237,28 @@ def main() -> None:
                 "style_class": style_class,
                 "shape_class": shape_class,
                 "font_class": font_class,
-                "image_url": build_cdn_url(base_url, result_path),
+                "image_url": build_cdn_url(base_url, result_path, args.asset_version),
                 "image_relative_path": result_path,
-                "mask_image_url": build_cdn_url(base_url, mask_path) if mask_path else None,
+                "mask_image_url": (
+                    build_cdn_url(base_url, mask_path, args.asset_version) if mask_path else None
+                ),
                 "mask_image_relative_path": mask_path,
-                "shape_image_url": build_cdn_url(base_url, shape_path) if shape_path else None,
+                "shape_image_url": (
+                    build_cdn_url(base_url, shape_path, args.asset_version) if shape_path else None
+                ),
                 "shape_image_relative_path": shape_path,
-                "style_image_url": build_cdn_url(base_url, style_path) if style_path else None,
+                "style_image_url": (
+                    build_cdn_url(base_url, style_path, args.asset_version) if style_path else None
+                ),
                 "style_image_relative_path": style_path,
-                "font_image_url": build_cdn_url(base_url, font_path) if font_path else None,
+                "font_image_url": (
+                    build_cdn_url(base_url, font_path, args.asset_version) if font_path else None
+                ),
                 "font_image_relative_path": font_path,
                 "reference_image_url": (
-                    build_cdn_url(base_url, reference_path) if reference_path else None
+                    build_cdn_url(base_url, reference_path, args.asset_version)
+                    if reference_path
+                    else None
                 ),
                 "reference_image_relative_path": reference_path,
             }
@@ -213,15 +267,15 @@ def main() -> None:
     items.sort(key=lambda item: item["numeric_id"])
 
     styles = sorted(
-        build_category_payload(dict(style_counts), style_paths, base_url),
+        build_category_payload(dict(style_counts), style_paths, base_url, args.asset_version),
         key=lambda item: natural_font_key(item["name"]),
     )
     shapes = sorted(
-        build_category_payload(dict(shape_counts), shape_paths, base_url),
+        build_category_payload(dict(shape_counts), shape_paths, base_url, args.asset_version),
         key=lambda item: natural_shape_key(item["name"]),
     )
     fonts = sorted(
-        build_category_payload(dict(font_counts), font_paths, base_url),
+        build_category_payload(dict(font_counts), font_paths, base_url, args.asset_version),
         key=lambda item: natural_font_key(item["name"]),
     )
 
@@ -233,6 +287,8 @@ def main() -> None:
             "github_repo": args.github_repo,
             "github_ref": args.github_ref,
             "cdn_base_url": base_url,
+            "results_dir_relative": args.results_dir_relative,
+            "asset_version": args.asset_version or None,
         },
         "counts": {
             "items": len(items),

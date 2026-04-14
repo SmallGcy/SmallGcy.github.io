@@ -1,4 +1,4 @@
-const MANIFEST_URL = "./data/test-manifest.json";
+const MANIFEST_URL = "./data/test-manifest.json?v=20260414-test-data-epoch2";
 const ITEMS_PER_PAGE = 4;
 
 const MODE_CONFIG = {
