@@ -1,11 +1,51 @@
-const MANIFEST_URL = "./data/complex-style-manifest.json?v=20260409-complex-style-smoke-direct";
+const MANIFEST_URL = "./data/complex-style-manifest.json?v=20260423-complex-style-123k-refresh";
 const ITEMS_PER_PAGE = 4;
+
+const ALPHA_BACKDROP_PRESETS = {
+  checker: {
+    label: "Checker",
+    mode: "checker",
+    chipClass: "is-checker",
+  },
+  white: {
+    label: "White",
+    mode: "solid",
+    color: "#ffffff",
+  },
+  graphite: {
+    label: "Graphite",
+    mode: "solid",
+    color: "#17181d",
+  },
+  slate: {
+    label: "Slate",
+    mode: "solid",
+    color: "#2a3142",
+  },
+  warm: {
+    label: "Warm",
+    mode: "solid",
+    color: "#efe3d1",
+  },
+  mint: {
+    label: "Mint",
+    mode: "solid",
+    color: "#d7efe5",
+  },
+  custom: {
+    label: "Custom",
+    mode: "custom",
+    color: "#ffffff",
+  },
+};
 
 const state = {
   manifest: null,
   categoryName: null,
   page: 1,
   imageVariant: "background",
+  alphaBackdrop: "checker",
+  alphaCustomColor: "#ffffff",
 };
 
 const elements = {
@@ -29,11 +69,23 @@ const elements = {
   prevPage: document.querySelector("#complexPrevPage"),
   nextPage: document.querySelector("#complexNextPage"),
   variantButtons: Array.from(document.querySelectorAll("#complexVariantToggle .variant-button")),
+  alphaBackdropBlock: document.querySelector("#complexAlphaBackdropBlock"),
+  alphaBackdropHint: document.querySelector("#complexAlphaBackdropHint"),
+  alphaBackdropButtons: Array.from(document.querySelectorAll("#complexAlphaBackdropPalette .alpha-bg-button")),
+  alphaCustomColor: document.querySelector("#complexAlphaCustomColor"),
   imageCardTemplate: document.querySelector("#complexImageCardTemplate"),
 };
 
 function formatNumber(value) {
   return new Intl.NumberFormat("en-US").format(value);
+}
+
+function hasAlphaImages() {
+  return Boolean(state.manifest?.counts?.alpha_items);
+}
+
+function hasBackgroundImages() {
+  return Boolean(state.manifest?.counts?.background_items);
 }
 
 function getFilteredStyles() {
@@ -49,6 +101,7 @@ function getFilteredItems() {
   }
 
   return state.manifest.items
+    .slice()
     .sort((left, right) => Number.parseInt(left.id, 10) - Number.parseInt(right.id, 10));
 }
 
@@ -76,9 +129,25 @@ function getDisplayImage(item) {
     };
   }
 
+  if (item.image_url) {
+    return {
+      url: item.image_url,
+      label: "Background render",
+      isAlpha: false,
+    };
+  }
+
+  if (item.alpha_image_url) {
+    return {
+      url: item.alpha_image_url,
+      label: "Transparent PNG",
+      isAlpha: true,
+    };
+  }
+
   return {
-    url: item.image_url,
-    label: "Background render",
+    url: "",
+    label: "Unavailable",
     isAlpha: false,
   };
 }
@@ -86,6 +155,12 @@ function getDisplayImage(item) {
 function syncUrl() {
   const params = new URLSearchParams(window.location.search);
   params.set("variant", state.imageVariant);
+  params.set("alphaBg", state.alphaBackdrop);
+  if (state.alphaBackdrop === "custom") {
+    params.set("alphaColor", state.alphaCustomColor);
+  } else {
+    params.delete("alphaColor");
+  }
   if (state.categoryName) {
     params.set("class", state.categoryName);
   }
@@ -97,8 +172,27 @@ function syncUrl() {
 function loadInitialState() {
   const params = new URLSearchParams(window.location.search);
   const variant = params.get("variant");
-  if (variant === "background" || variant === "alpha") {
-    state.imageVariant = variant;
+  const allowBackground = hasBackgroundImages();
+  const allowAlpha = hasAlphaImages();
+
+  if (variant === "background" && allowBackground) {
+    state.imageVariant = "background";
+  } else if (variant === "alpha" && allowAlpha) {
+    state.imageVariant = "alpha";
+  } else if (!allowBackground && allowAlpha) {
+    state.imageVariant = "alpha";
+  } else {
+    state.imageVariant = "background";
+  }
+
+  const alphaBackdrop = params.get("alphaBg");
+  if (alphaBackdrop && alphaBackdrop in ALPHA_BACKDROP_PRESETS) {
+    state.alphaBackdrop = alphaBackdrop;
+  }
+
+  const customColor = params.get("alphaColor");
+  if (customColor && /^#[0-9a-fA-F]{6}$/.test(customColor)) {
+    state.alphaCustomColor = customColor;
   }
 
   const page = Number.parseInt(params.get("page") || "1", 10);
@@ -116,21 +210,70 @@ function loadInitialState() {
 
 function renderStats() {
   const items = getFilteredItems();
-  const shapes = new Set(items.map((item) => item.shape_class));
+  const shapes = new Set(items.map((item) => item.shape_class).filter(Boolean));
   elements.statItems.textContent = formatNumber(items.length);
   elements.statStyles.textContent = formatNumber(getFilteredStyles().length);
   elements.statShapes.textContent = formatNumber(shapes.size);
 }
 
 function renderVariantButtons() {
-  const hasAlphaImages = Boolean(state.manifest?.counts?.alpha_items);
-  for (const button of elements.variantButtons) {
-    button.classList.toggle("active", button.dataset.variant === state.imageVariant);
-    button.disabled = button.dataset.variant === "alpha" && !hasAlphaImages;
+  const allowBackground = hasBackgroundImages();
+  const allowAlpha = hasAlphaImages();
+
+  if (state.imageVariant === "background" && !allowBackground && allowAlpha) {
+    state.imageVariant = "alpha";
   }
-  elements.variantHint.textContent = hasAlphaImages
-    ? "Switch between the original background render and the transparent PNG version."
-    : "Transparent PNG files are not available in the current manifest.";
+  if (state.imageVariant === "alpha" && !allowAlpha && allowBackground) {
+    state.imageVariant = "background";
+  }
+
+  for (const button of elements.variantButtons) {
+    const variant = button.dataset.variant;
+    button.classList.toggle("active", variant === state.imageVariant);
+    button.disabled = (variant === "background" && !allowBackground) || (variant === "alpha" && !allowAlpha);
+  }
+
+  if (!allowBackground && allowAlpha) {
+    elements.variantHint.textContent =
+      "This refresh publishes RGBA results only. Transparent mode is enabled by default, with a checkerboard preview or custom background color.";
+  } else if (allowBackground && allowAlpha) {
+    elements.variantHint.textContent =
+      "Switch between the original background render and the transparent PNG preview.";
+  } else if (allowBackground) {
+    elements.variantHint.textContent =
+      "Only background renders are available in the current manifest.";
+  } else {
+    elements.variantHint.textContent =
+      "No preview images are available in the current manifest.";
+  }
+}
+
+function renderAlphaBackdropControls() {
+  const shouldShow = state.imageVariant === "alpha" && hasAlphaImages();
+  elements.alphaBackdropBlock.classList.toggle("hidden", !shouldShow);
+  if (!shouldShow) {
+    return;
+  }
+
+  for (const button of elements.alphaBackdropButtons) {
+    const key = button.dataset.backdrop;
+    button.classList.toggle("active", key === state.alphaBackdrop);
+  }
+
+  elements.alphaCustomColor.value = state.alphaCustomColor;
+  elements.alphaCustomColor.disabled = state.alphaBackdrop !== "custom";
+
+  if (state.alphaBackdrop === "checker") {
+    elements.alphaBackdropHint.textContent =
+      "Transparent PNG preview uses the default checkerboard matte.";
+  } else if (state.alphaBackdrop === "custom") {
+    elements.alphaBackdropHint.textContent =
+      `Transparent PNG preview uses your custom color ${state.alphaCustomColor}.`;
+  } else {
+    const preset = ALPHA_BACKDROP_PRESETS[state.alphaBackdrop];
+    elements.alphaBackdropHint.textContent =
+      `Transparent PNG preview uses the ${preset.label.toLowerCase()} matte.`;
+  }
 }
 
 function setReferenceVisual(reference) {
@@ -205,6 +348,38 @@ function renderReferencePanel(itemCount) {
   setReferenceVisual(reference);
 }
 
+function getAlphaBackdropDescription() {
+  if (state.alphaBackdrop === "checker") {
+    return "Checker preview";
+  }
+  if (state.alphaBackdrop === "custom") {
+    return `Custom matte ${state.alphaCustomColor}`;
+  }
+  return `${ALPHA_BACKDROP_PRESETS[state.alphaBackdrop].label} matte`;
+}
+
+function applyAlphaBackdrop(link, display) {
+  link.classList.remove("alpha-variant", "alpha-checker", "alpha-solid");
+  link.style.removeProperty("--alpha-preview-bg");
+  if (!display.isAlpha) {
+    return;
+  }
+
+  link.classList.add("alpha-variant");
+  if (state.alphaBackdrop === "checker") {
+    link.classList.add("alpha-checker");
+    return;
+  }
+
+  link.classList.add("alpha-solid");
+  if (state.alphaBackdrop === "custom") {
+    link.style.setProperty("--alpha-preview-bg", state.alphaCustomColor);
+    return;
+  }
+
+  link.style.setProperty("--alpha-preview-bg", ALPHA_BACKDROP_PRESETS[state.alphaBackdrop].color);
+}
+
 function renderGallery() {
   const groups = getGroups();
   const items = groups.get(state.categoryName) || [];
@@ -219,7 +394,9 @@ function renderGallery() {
 
   renderReferencePanel(items.length);
   elements.galleryTitle.textContent = `Style: ${state.categoryName}`;
-  elements.gallerySubtitle.textContent = `${formatNumber(items.length)} generated images in this category · ${variantLabel}`;
+  elements.gallerySubtitle.textContent =
+    `${formatNumber(items.length)} generated images in this category · ${variantLabel}` +
+    (state.imageVariant === "alpha" ? ` · ${getAlphaBackdropDescription()}` : "");
   elements.pageInfo.textContent = `Page ${state.page} / ${totalPages}`;
   elements.prevPage.disabled = state.page <= 1;
   elements.nextPage.disabled = state.page >= totalPages;
@@ -235,12 +412,21 @@ function renderGallery() {
     const meta = fragment.querySelector(".image-meta");
     const display = getDisplayImage(item);
 
-    link.href = display.url;
-    link.classList.toggle("alpha-variant", display.isAlpha);
-    image.src = display.url;
+    link.href = display.url || "#";
+    if (!display.url) {
+      link.setAttribute("aria-disabled", "true");
+      image.removeAttribute("src");
+    } else {
+      link.removeAttribute("aria-disabled");
+      image.src = display.url;
+    }
+    applyAlphaBackdrop(link, display);
+
     image.alt = `${item.text} rendered in ${item.style_class} with ${item.shape_class}`;
     title.textContent = item.text;
-    meta.textContent = `Shape: ${item.shape_class} · ${display.label}`;
+    meta.textContent =
+      `Shape: ${item.shape_class} · ${display.label}` +
+      (display.isAlpha ? ` · ${getAlphaBackdropDescription()}` : "");
 
     elements.galleryGrid.append(fragment);
   }
@@ -258,6 +444,7 @@ function render() {
   }
 
   renderVariantButtons();
+  renderAlphaBackdropControls();
   renderCategoryList();
   renderGallery();
   syncUrl();
@@ -275,13 +462,32 @@ function attachEvents() {
   for (const button of elements.variantButtons) {
     button.addEventListener("click", () => {
       const nextVariant = button.dataset.variant;
-      if (nextVariant === state.imageVariant) {
+      if (nextVariant === state.imageVariant || button.disabled) {
         return;
       }
       state.imageVariant = nextVariant;
       render();
     });
   }
+
+  for (const button of elements.alphaBackdropButtons) {
+    button.addEventListener("click", () => {
+      const nextBackdrop = button.dataset.backdrop;
+      if (nextBackdrop === state.alphaBackdrop) {
+        return;
+      }
+      state.alphaBackdrop = nextBackdrop;
+      render();
+    });
+  }
+
+  elements.alphaCustomColor.addEventListener("input", (event) => {
+    state.alphaCustomColor = event.target.value;
+    if (state.alphaBackdrop !== "custom") {
+      state.alphaBackdrop = "custom";
+    }
+    render();
+  });
 
   elements.prevPage.addEventListener("click", () => {
     if (state.page <= 1) {
