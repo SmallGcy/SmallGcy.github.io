@@ -43,7 +43,6 @@ const state = {
   manifest: null,
   categoryName: null,
   page: 1,
-  imageVariant: "background",
   alphaBackdrop: "checker",
   alphaCustomColor: "#ffffff",
 };
@@ -68,7 +67,6 @@ const elements = {
   pageInfo: document.querySelector("#complexPageInfo"),
   prevPage: document.querySelector("#complexPrevPage"),
   nextPage: document.querySelector("#complexNextPage"),
-  variantButtons: Array.from(document.querySelectorAll("#complexVariantToggle .variant-button")),
   alphaBackdropBlock: document.querySelector("#complexAlphaBackdropBlock"),
   alphaBackdropHint: document.querySelector("#complexAlphaBackdropHint"),
   alphaBackdropButtons: Array.from(document.querySelectorAll("#complexAlphaBackdropPalette .alpha-bg-button")),
@@ -82,10 +80,6 @@ function formatNumber(value) {
 
 function hasAlphaImages() {
   return Boolean(state.manifest?.counts?.alpha_items);
-}
-
-function hasBackgroundImages() {
-  return Boolean(state.manifest?.counts?.background_items);
 }
 
 function getFilteredStyles() {
@@ -121,22 +115,6 @@ function getReferenceByName(name) {
 }
 
 function getDisplayImage(item) {
-  if (state.imageVariant === "alpha" && item.alpha_image_url) {
-    return {
-      url: item.alpha_image_url,
-      label: "Transparent PNG",
-      isAlpha: true,
-    };
-  }
-
-  if (item.image_url) {
-    return {
-      url: item.image_url,
-      label: "Background render",
-      isAlpha: false,
-    };
-  }
-
   if (item.alpha_image_url) {
     return {
       url: item.alpha_image_url,
@@ -154,7 +132,6 @@ function getDisplayImage(item) {
 
 function syncUrl() {
   const params = new URLSearchParams(window.location.search);
-  params.set("variant", state.imageVariant);
   params.set("alphaBg", state.alphaBackdrop);
   if (state.alphaBackdrop === "custom") {
     params.set("alphaColor", state.alphaCustomColor);
@@ -171,19 +148,6 @@ function syncUrl() {
 
 function loadInitialState() {
   const params = new URLSearchParams(window.location.search);
-  const variant = params.get("variant");
-  const allowBackground = hasBackgroundImages();
-  const allowAlpha = hasAlphaImages();
-
-  if (variant === "background" && allowBackground) {
-    state.imageVariant = "background";
-  } else if (variant === "alpha" && allowAlpha) {
-    state.imageVariant = "alpha";
-  } else if (!allowBackground && allowAlpha) {
-    state.imageVariant = "alpha";
-  } else {
-    state.imageVariant = "background";
-  }
 
   const alphaBackdrop = params.get("alphaBg");
   if (alphaBackdrop && alphaBackdrop in ALPHA_BACKDROP_PRESETS) {
@@ -216,44 +180,17 @@ function renderStats() {
   elements.statShapes.textContent = formatNumber(shapes.size);
 }
 
-function renderVariantButtons() {
-  const allowBackground = hasBackgroundImages();
-  const allowAlpha = hasAlphaImages();
-
-  if (state.imageVariant === "background" && !allowBackground && allowAlpha) {
-    state.imageVariant = "alpha";
-  }
-  if (state.imageVariant === "alpha" && !allowAlpha && allowBackground) {
-    state.imageVariant = "background";
-  }
-
-  for (const button of elements.variantButtons) {
-    const variant = button.dataset.variant;
-    button.classList.toggle("active", variant === state.imageVariant);
-    button.disabled = (variant === "background" && !allowBackground) || (variant === "alpha" && !allowAlpha);
-  }
-
-  if (!allowBackground && allowAlpha) {
-    elements.variantHint.textContent =
-      "This refresh publishes RGBA results only. Transparent mode is enabled by default, with a checkerboard preview or custom background color.";
-  } else if (allowBackground && allowAlpha) {
-    elements.variantHint.textContent =
-      "Switch between the original background render and the transparent PNG preview.";
-  } else if (allowBackground) {
-    elements.variantHint.textContent =
-      "Only background renders are available in the current manifest.";
-  } else {
-    elements.variantHint.textContent =
-      "No preview images are available in the current manifest.";
-  }
-}
-
 function renderAlphaBackdropControls() {
-  const shouldShow = state.imageVariant === "alpha" && hasAlphaImages();
+  const shouldShow = hasAlphaImages();
   elements.alphaBackdropBlock.classList.toggle("hidden", !shouldShow);
   if (!shouldShow) {
+    elements.variantHint.textContent =
+      "No RGBA preview images are available in the current manifest.";
     return;
   }
+
+  elements.variantHint.textContent =
+    "This page shows only RGBA outputs. Use the palette below to switch between the checkerboard matte and a solid-color background.";
 
   for (const button of elements.alphaBackdropButtons) {
     const key = button.dataset.backdrop;
@@ -390,13 +327,11 @@ function renderGallery() {
 
   const start = (state.page - 1) * ITEMS_PER_PAGE;
   const visibleItems = items.slice(start, start + ITEMS_PER_PAGE);
-  const variantLabel = state.imageVariant === "alpha" ? "Transparent PNG" : "Background render";
 
   renderReferencePanel(items.length);
   elements.galleryTitle.textContent = `Style: ${state.categoryName}`;
   elements.gallerySubtitle.textContent =
-    `${formatNumber(items.length)} generated images in this category · ${variantLabel}` +
-    (state.imageVariant === "alpha" ? ` · ${getAlphaBackdropDescription()}` : "");
+    `${formatNumber(items.length)} generated images in this category · Transparent PNG · ${getAlphaBackdropDescription()}`;
   elements.pageInfo.textContent = `Page ${state.page} / ${totalPages}`;
   elements.prevPage.disabled = state.page <= 1;
   elements.nextPage.disabled = state.page >= totalPages;
@@ -443,7 +378,6 @@ function render() {
     state.page = 1;
   }
 
-  renderVariantButtons();
   renderAlphaBackdropControls();
   renderCategoryList();
   renderGallery();
@@ -459,17 +393,6 @@ async function loadManifest() {
 }
 
 function attachEvents() {
-  for (const button of elements.variantButtons) {
-    button.addEventListener("click", () => {
-      const nextVariant = button.dataset.variant;
-      if (nextVariant === state.imageVariant || button.disabled) {
-        return;
-      }
-      state.imageVariant = nextVariant;
-      render();
-    });
-  }
-
   for (const button of elements.alphaBackdropButtons) {
     button.addEventListener("click", () => {
       const nextBackdrop = button.dataset.backdrop;
